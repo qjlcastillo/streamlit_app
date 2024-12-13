@@ -59,37 +59,41 @@ try:
         temp_data['Mean monthly temperature'] = pd.to_numeric(temp_data['Mean monthly temperature'], errors='coerce')
         temp_data.dropna(inplace=True)  # Drop missing values
 
-        # Visualize temperature data
-        st.subheader("Temperature Levels Time Series")
-        st.line_chart(temp_data['Mean monthly temperature'])
+        # Check if temp_data is empty
+        if temp_data.empty:
+            st.error("Temperature data is empty. Please check the file.")
+        else:
+            # Visualize temperature data
+            st.subheader("Temperature Levels Time Series")
+            st.line_chart(temp_data['Mean monthly temperature'])
 
-        # Fit baseline ARIMA model
-        baseline_model = ARIMA(temp_data['Mean monthly temperature'], order=(1, 1, 1))
-        baseline_results = baseline_model.fit()
+            # Fit baseline ARIMA model
+            baseline_model = ARIMA(temp_data['Mean monthly temperature'], order=(1, 1, 1))
+            baseline_results = baseline_model.fit()
 
-        # Forecast the next 12 months
-        forecast = baseline_results.get_forecast(steps=12)
-        forecast_index = pd.date_range(start=temp_data.index[-1] + pd.DateOffset(months=1), periods=12, freq='M')
-        forecast_values = forecast.predicted_mean
-        forecast_conf_int = forecast.conf_int()
+            # Forecast the next 12 months
+            forecast = baseline_results.get_forecast(steps=12)
+            forecast_index = pd.date_range(start=temp_data.index[-1] + pd.DateOffset(months=1), periods=12, freq='M')
+            forecast_values = forecast.predicted_mean
+            forecast_conf_int = forecast.conf_int()
 
-        # Plot the forecasts
-        plt.figure(figsize=(12, 6))
-        plt.plot(temp_data.index, temp_data['Mean monthly temperature'], label='Historical Data', color='blue')
-        plt.plot(forecast_index, forecast_values, label='Forecast', color='red')
-        plt.fill_between(forecast_index, forecast_conf_int.iloc[:, 0], forecast_conf_int.iloc[:, 1], color='pink', alpha=0.3)
-        plt.title('Temperature Forecast')
-        plt.xlabel('Date')
-        plt.ylabel('Temperature (°C)')
-        plt.xticks(rotation=45)
-        plt.legend()
-        st.pyplot(plt)
+            # Plot the forecasts
+            plt.figure(figsize=(12, 6))
+            plt.plot(temp_data.index, temp_data['Mean monthly temperature'], label='Historical Data', color='blue')
+            plt.plot(forecast_index, forecast_values, label='Forecast', color='red')
+            plt.fill_between(forecast_index, forecast_conf_int.iloc[:, 0], forecast_conf_int.iloc[:, 1], color='pink', alpha=0.3)
+            plt.title('Temperature Forecast')
+            plt.xlabel('Date')
+            plt.ylabel('Temperature (°C)')
+            plt.xticks(rotation=45)
+            plt.legend()
+            st.pyplot(plt)
 except FileNotFoundError:
     st.error("Temperature data file not found. Please check the file path.")
 
 # Perform grid search for best ARIMA parameters
 if st.button("Find Best ARIMA Parameters for Temperature Data"):
-    if 'temp_data' in locals():  # Ensure temp_data is loaded
+    if 'temp_data' in locals() and not temp_data.empty:  # Ensure temp_data is loaded and not empty
         p = d = q = range(0, 3)  # Adjust ranges as necessary
         pdq = list(itertools.product(p, d, q))
 
@@ -108,4 +112,4 @@ if st.button("Find Best ARIMA Parameters for Temperature Data"):
 
         st.write(f'Best ARIMA parameters: {best_pdq} with AIC: {best_aic}')
     else:
-        st.warning("Temperature data not loaded. Please check the file path.")
+        st.warning("Temperature data not loaded or is empty. Please check the file path.")
