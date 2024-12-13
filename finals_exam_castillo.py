@@ -13,8 +13,8 @@ warnings.filterwarnings("ignore")
 st.title("ARIMA Model Time Series Forecasting")
 
 # Define file paths
-co2_file_path = "/home/devasc/Downloads/streamlit_app/data.csv"
-temp_file_path = "/home/devasc/Downloads/streamlit_app/dataset_temperature.csv"
+co2_file_path = "data.csv"
+temp_file_path = "dataset_temperature.csv"
 
 # Load CO2 data
 try:
