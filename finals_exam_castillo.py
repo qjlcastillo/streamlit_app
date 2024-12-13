@@ -48,7 +48,17 @@ except FileNotFoundError:
 
 # Load temperature data
 try:
-    temp_data = pd.read_csv(temp_file_path, parse_dates=['Month'], index_col='Month')
+    temp_data = pd.read_csv(temp_file_path)
+    
+    # Debug: Show the first few rows and datatypes
+    st.write("Temperature Data Preview:")
+    st.write(temp_data.head())
+    st.write("Data Types:")
+    st.write(temp_data.dtypes)
+
+    # Convert 'Month' column to datetime
+    temp_data['Month'] = pd.to_datetime(temp_data['Month'], errors='coerce')
+    temp_data.set_index('Month', inplace=True)
     temp_data.columns = temp_data.columns.str.strip()  # Clean column names
 
     # Check if the required column exists
@@ -63,6 +73,12 @@ try:
         if temp_data.empty:
             st.error("Temperature data is empty. Please check the file.")
         else:
+            # Debug: Print the index and the last date
+            st.write("Temperature Data Index:")
+            st.write(temp_data.index)
+            st.write("Last Date in Temperature Data Index:")
+            st.write(temp_data.index[-1])
+
             # Visualize temperature data
             st.subheader("Temperature Levels Time Series")
             st.line_chart(temp_data['Mean monthly temperature'])
@@ -72,22 +88,29 @@ try:
             baseline_results = baseline_model.fit()
 
             # Forecast the next 12 months
-            forecast = baseline_results.get_forecast(steps=12)
-            forecast_index = pd.date_range(start=temp_data.index[-1] + pd.DateOffset(months=1), periods=12, freq='M')
-            forecast_values = forecast.predicted_mean
-            forecast_conf_int = forecast.conf_int()
+            try:
+                forecast = baseline_results.get_forecast(steps=12)
+                last_date = temp_data.index[-1]
+                st.write("Last Date for Forecasting:")
+                st.write(last_date)
 
-            # Plot the forecasts
-            plt.figure(figsize=(12, 6))
-            plt.plot(temp_data.index, temp_data['Mean monthly temperature'], label='Historical Data', color='blue')
-            plt.plot(forecast_index, forecast_values, label='Forecast', color='red')
-            plt.fill_between(forecast_index, forecast_conf_int.iloc[:, 0], forecast_conf_int.iloc[:, 1], color='pink', alpha=0.3)
-            plt.title('Temperature Forecast')
-            plt.xlabel('Date')
-            plt.ylabel('Temperature (°C)')
-            plt.xticks(rotation=45)
-            plt.legend()
-            st.pyplot(plt)
+                forecast_index = pd.date_range(start=last_date + pd.DateOffset(months=1), periods=12, freq='M')
+                forecast_values = forecast.predicted_mean
+                forecast_conf_int = forecast.conf_int()
+
+                # Plot the forecasts
+                plt.figure(figsize=(12, 6))
+                plt.plot(temp_data.index, temp_data['Mean monthly temperature'], label='Historical Data', color='blue')
+                plt.plot(forecast_index, forecast_values, label='Forecast', color='red')
+                plt.fill_between(forecast_index, forecast_conf_int.iloc[:, 0], forecast_conf_int.iloc[:, 1], color='pink', alpha=0.3)
+                plt.title('Temperature Forecast')
+                plt.xlabel('Date')
+                plt.ylabel('Temperature (°C)')
+                plt.xticks(rotation=45)
+                plt.legend()
+                st.pyplot(plt)
+            except Exception as e:
+                st.error(f"An error occurred while generating the forecast: {e}")
 except FileNotFoundError:
     st.error("Temperature data file not found. Please check the file path.")
 
@@ -107,7 +130,7 @@ if st.button("Find Best ARIMA Parameters for Temperature Data"):
                 if results.aic < best_aic:
                     best_aic = results.aic
                     best_pdq = param
-            except:
+            except Exception as e:
                 continue
 
         st.write(f'Best ARIMA parameters: {best_pdq} with AIC: {best_aic}')
