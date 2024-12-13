@@ -3,3 +3,6 @@ tensorflow
 Pillow
 numpy
 scikit-learn
+pandas
+matplotlib
+statsmodels
